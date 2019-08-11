@@ -26,26 +26,6 @@ demo1: mycat libdecompresser.so mytar
 	@if [ "$$(sha256sum /tmp/c | cut -f1 -d' ')" != "$$(sha256sum /tmp/oc | cut -f1 -d' ')" ]; then echo "File c doesnt match"; exit 1; fi
 	@echo "All files match"
 
-demo2: mycat libdecompresser.so mytar
-	rm -rf demo
-	mkdir demo
-	seq 1 100000 > demo/a
-	seq 1 1000000 > demo/b
-	seq 1 10000000 > demo/c
-	du -sh demo
-	gzip demo/a
-	gzip demo/b
-	gzip demo/c
-	rm -f out.mytar
-	echo demo/a.gz demo/b.gz demo/c.gz | ./mytar out.mytar
-	rm -rf demo
-	du -sh out.mytar
-	@echo "############################## Rodando mycat com um arquivo que nao existe ##########################################################"
-	./mycat demo/a.gz
-	@echo ""
-	@echo "############################## Rodando mycat com um arquivo montado virtualmente atraves do LD_PRELOAD ################"
-	VIRTUAL_TAR_FS=out.mytar LD_PRELOAD=./libdecompresser.so ./mycat demo/a.gz | head -n 3
-
 mycat: mycat.cpp
 	g++ -o mycat mycat.cpp
 
