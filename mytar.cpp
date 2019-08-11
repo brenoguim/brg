@@ -42,7 +42,7 @@ int main(int argc, char** argv)
     {
         addDataToTar = [innerFn = addDataToTar] (bytespan data)
         {
-            brg::encrypt(data, innerFn);
+            brg::encrypt(33, data, innerFn);
         };
     }
 

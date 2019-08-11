@@ -7,8 +7,8 @@
 namespace brg
 {
 
-void encrypt(span<const byte> data, const std::function<void(span<const byte>)>& writeOut);
-void decrypt(span<const byte> data, const std::function<void(span<const byte>)>& writeOut);
+void encrypt(unsigned char key, span<const byte> data, const std::function<void(span<const byte>)>& writeOut);
+void decrypt(unsigned char key, span<const byte> data, const std::function<void(span<const byte>)>& writeOut);
 
 }
 
