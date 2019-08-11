@@ -11,7 +11,7 @@ demo1: mycat libdecompresser.so mytar
 	cp /tmp/c demo/c
 	du -sh demo
 	rm -f out.mytar
-	echo demo/a demo/b demo/c | ./mytar -z out.mytar
+	echo demo/a demo/b demo/c | ./mytar -k 33 -z -o out.mytar
 	du -sh out.mytar
 	rm -rf demo
 	@echo "############################## Rodando mycat com um arquivo que nao existe ##########################################################"

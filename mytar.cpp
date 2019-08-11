@@ -3,31 +3,42 @@
 #include "src/zip.h"
 #include "src/crypt.h"
 
+#include <cstdlib>
 #include <iostream>
 #include <string>
 
 int main(int argc, char** argv)
 {
     bool gz = false;
-    bool crypt = true;
+    bool crypt = false;
+    unsigned char cryptKey = 0;
     std::string outputFile;
 
-    if (argc == 2)
+    for (int i = 1; i < argc; ++i)
     {
-        outputFile = argv[1];
-    }
-    else if (argc == 3)
-    {
-        if (std::string(argv[1]) != "-z")
+        std::string arg = argv[i];
+        if (arg == "-z")
         {
-            throw std::runtime_error("Only supported switch is -z");
+            gz = true;
         }
-        gz = true;
-        outputFile = argv[2];
+        else if (arg == "-k")
+        {
+            crypt = true;
+            cryptKey = std::atoi(argv[++i]);
+        }
+        else if (arg == "-o")
+        {
+            outputFile = argv[++i];
+        }
+        else
+        {
+            throw std::runtime_error("Unexpected argument: " + arg);
+        }
     }
-    else
+
+    if (outputFile.empty())
     {
-        throw std::runtime_error("Bad syntax");
+        throw std::runtime_error("No output file specified.");
     }
 
     brg::TarWriter twriter(outputFile);
@@ -40,9 +51,9 @@ int main(int argc, char** argv)
 
     if (crypt)
     {
-        addDataToTar = [innerFn = addDataToTar] (bytespan data)
+        addDataToTar = [cryptKey, innerFn = addDataToTar] (bytespan data)
         {
-            brg::encrypt(33, data, innerFn);
+            brg::encrypt(cryptKey, data, innerFn);
         };
     }
 
