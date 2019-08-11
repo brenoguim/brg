@@ -2,6 +2,7 @@
 #define BRG_TAR_WRITER
 
 #include "defs.h"
+#include "serial.h"
 
 #include <fstream>
 #include <functional>
@@ -12,20 +13,6 @@
 
 namespace brg
 {
-
-template<class T>
-void writeBinary(std::ofstream& os, const T& t)
-{
-    static_assert(std::is_trivial<T>::value, "Can only write trivial types as binary data");
-    os.write(reinterpret_cast<const byte*>(&t), sizeof(t));
-}
-
-template<>
-void writeBinary(std::ofstream& os, const std::string& str)
-{
-    os.write(str.c_str(), str.size());
-    writeBinary(os, str.size());
-}
 
 class TarWriter
 {
@@ -67,18 +54,18 @@ class TarWriter
             writeFileInformation(*itLast, m_currentPos - itLast->begin);
         }
         // Write number of files
-        writeBinary(m_output, m_files.size());
+        serializeForBackward(m_output, m_files.size());
     }
 
   private:
     void writeFileInformation(const FileData& file2data, std::size_t dataSize)
     {
         // Write file name
-        writeBinary(m_output, file2data.name);
+        serializeForBackward(m_output, file2data.name);
         // Write file size
-        writeBinary(m_output, dataSize);
+        serializeForBackward(m_output, dataSize);
         // Write file offset 
-        writeBinary(m_output, file2data.begin);
+        serializeForBackward(m_output, file2data.begin);
     }
 
     std::ofstream m_output;
