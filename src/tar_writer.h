@@ -20,6 +20,13 @@ void writeBinary(std::ofstream& os, const T& t)
     os.write(reinterpret_cast<const byte*>(&t), sizeof(t));
 }
 
+template<>
+void writeBinary(std::ofstream& os, const std::string& str)
+{
+    os.write(str.c_str(), str.size());
+    writeBinary(os, str.size());
+}
+
 class TarWriter
 {
     struct FileData
@@ -67,9 +74,7 @@ class TarWriter
     void writeFileInformation(const FileData& file2data, std::size_t dataSize)
     {
         // Write file name
-        m_output.write(file2data.name.c_str(), file2data.name.size());
-        // Write file name size
-        writeBinary(m_output, file2data.name.size());
+        writeBinary(m_output, file2data.name);
         // Write file size
         writeBinary(m_output, dataSize);
         // Write file offset 
