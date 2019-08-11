@@ -11,7 +11,7 @@ int main(int argc, char** argv)
 {
     bool gz = false;
     bool crypt = false;
-    unsigned char cryptKey = 0;
+    const char* cryptKey = nullptr;
     std::string outputFile;
 
     for (int i = 1; i < argc; ++i)
@@ -24,7 +24,7 @@ int main(int argc, char** argv)
         else if (arg == "-k")
         {
             crypt = true;
-            cryptKey = std::atoi(argv[++i]);
+            cryptKey = argv[++i];
         }
         else if (arg == "-o")
         {

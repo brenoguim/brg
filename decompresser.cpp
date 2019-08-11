@@ -17,7 +17,7 @@ extern "C" FILE* fopen64(const char* name, const char* mode)
         {
             using bytespan = brg::span<const brg::byte>;
 
-            brg::decrypt(33, fileData, [&wFd] (bytespan data) {
+            brg::decrypt("MyKey", fileData, [&wFd] (bytespan data) {
                 brg::unzip(data, [&wFd] (bytespan data) {
                     wFd << data;
                 });
