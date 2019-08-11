@@ -33,8 +33,7 @@ class TarReader
         {
             auto fileOffset = brg::deserializeBackwards<std::size_t>(buf);
             auto fileSize = brg::deserializeBackwards<std::size_t>(buf);
-            auto fileNameSize = brg::deserializeBackwards<std::size_t>(buf);
-            auto fileName = brg::deserializeBackwards<std::string>(buf, fileNameSize);
+            auto fileName = brg::deserializeBackwards<std::string>(buf);
             files.emplace_back(FileData{std::move(fileName), fileOffset, fileSize});
         }
 

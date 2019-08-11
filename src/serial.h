@@ -20,12 +20,10 @@ T deserializeBackwards(const byte*& buf)
     return t;
 }
 
-template<class T>
-T deserializeBackwards(const byte*& buf, std::size_t size);
-
 template<>
-std::string deserializeBackwards<std::string>(const byte*& buf, std::size_t size)
+std::string deserializeBackwards<std::string>(const byte*& buf)
 {
+    auto size = deserializeBackwards<std::size_t>(buf);
     buf -= size;
     return std::string(buf, size);
 }
