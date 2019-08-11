@@ -17,12 +17,10 @@ extern "C" FILE* fopen64(const char* name, const char* mode)
         {
             using bytespan = brg::span<const brg::byte>;
 
-            auto writeToFileD = [&wFd] (bytespan data) {
-                wFd << data;
-            };
-
-            brg::decrypt(fileData, [&writeToFileD] (bytespan data) {
-                brg::unzip(data, writeToFileD);
+            brg::decrypt(fileData, [&wFd] (bytespan data) {
+                brg::unzip(data, [&wFd] (bytespan data) {
+                    wFd << data;
+                });
             });
 
         }).detach();
