@@ -4,6 +4,7 @@
 #include <string>
 #include <zlib.h>
 #include <iostream>
+#include <vector>
 
 void brg::zip(brg::span<const brg::byte> data, const std::function<void(brg::span<const brg::byte>)>& writeOut)
 {
@@ -23,18 +24,29 @@ void brg::zip(brg::span<const brg::byte> data, const std::function<void(brg::spa
                       8,
                       Z_DEFAULT_STRATEGY);
 
+    std::vector<brg::byte> vec;
     char bytebuf[16*1024];
+    int r;
+    int flush = Z_STREAM_END;
     do
     {
         gz.next_out = (unsigned char*)bytebuf;
         gz.avail_out = sizeof(bytebuf);
-        deflate(&gz, Z_FINISH);
-        if (sizeof(bytebuf) == gz.avail_out)
+        r = deflate(&gz, flush);
+        if (r == Z_BUF_ERROR)
+        {
+            flush = Z_FINISH;
+        }
+        else if (r != Z_OK && r != Z_STREAM_END)
         {
             throw std::runtime_error(std::string("Could not deflate buffer: ") + gz.msg);
         }
-        writeOut(brg::span<const brg::byte>(bytebuf, sizeof(bytebuf) - gz.avail_out));
-    } while (gz.avail_in);
+        brg::span<const brg::byte> outspan(bytebuf, sizeof(bytebuf) - gz.avail_out);
+        vec.insert(vec.end(), outspan.begin(), outspan.end());
+    } while (r != Z_STREAM_END);
+
+    writeOut(brg::span<const brg::byte>(vec.data(), vec.size()));
+
     deflateEnd(&gz);
 }
 
@@ -52,17 +64,21 @@ void brg::unzip(brg::span<const brg::byte> data, const std::function<void(brg::s
     gz.avail_in = sz;
     inflateInit2(&gz, MAX_WBITS + 32);
 
+    std::vector<brg::byte> vec;
     char bytebuf[16*1024];
+    int inflateResult;
     do
     {
         gz.next_out = (unsigned char*)bytebuf;
         gz.avail_out = sizeof(bytebuf);
-        inflate(&gz, Z_NO_FLUSH);
-        if (sizeof(bytebuf) == gz.avail_out)
+        inflateResult = inflate(&gz, Z_NO_FLUSH);
+        if (inflateResult != Z_OK && inflateResult != Z_STREAM_END)
         {
             throw std::runtime_error(std::string("Could not inflate buffer: ") + gz.msg);
         }
-        writeOut(brg::span<const brg::byte>(bytebuf, sizeof(bytebuf) - gz.avail_out));
-    } while (gz.avail_in);
+        brg::span<const brg::byte> outspan(bytebuf, sizeof(bytebuf) - gz.avail_out);
+        vec.insert(vec.end(), outspan.begin(), outspan.end());
+    } while (inflateResult != Z_STREAM_END);
+    writeOut(brg::span<const brg::byte>(vec.data(), vec.size()));
     inflateEnd(&gz);
 }
