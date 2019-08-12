@@ -27,20 +27,20 @@ demo1: mycat libdecompresser.so mytar
 	@echo "All files match"
 
 mycat: mycat.cpp
-	g++ -o mycat mycat.cpp
+	g++ -O2 -o mycat mycat.cpp
 
 libdecompresser.so: decompresser.cpp src/libbrg.a
-	g++ -std=c++11 -fPIC -shared -o libdecompresser.so $^ -ldl -lpthread -lz
+	g++ -O2 -std=c++14 -fPIC -shared -o libdecompresser.so $^ -ldl -lpthread -lz
 
 mytar: mytar.cpp src/libbrg.a
-	g++ -std=c++11 -o $@ $^ -lz
+	g++ -O2 -std=c++14 -o $@ $^ -lz
 
 src/libbrg.a: src/MMFile.o src/zip.o src/crypt.o src/fd.o
 	rm -f $@
 	ar rcs $@ $^
 
 %.o: %.cpp
-	g++ -fPIC -std=c++11 -c -o $@ $^ 
+	g++ -O2 -fPIC -std=c++14 -c -o $@ $^ 
 
 clean:
 	-rm libdecompresser.so mycat mytar

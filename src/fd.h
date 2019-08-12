@@ -29,6 +29,7 @@ class FileD
         reset();
         m_fd = other.m_fd;
         other.m_fd = -1;
+        return *this;
     }
 
     ~FileD() { reset(); }
