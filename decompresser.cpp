@@ -1,5 +1,5 @@
-#include "src/crypt.h"
 #include "src/fd.h"
+#include "src/scramble.h"
 #include "src/tar_reader.h"
 #include "src/zip.h"
 
@@ -17,7 +17,7 @@ extern "C" FILE* fopen64(const char* name, const char* mode)
         {
             using bytespan = brg::span<const brg::byte>;
 
-            brg::decrypt("MyKey", fileData, [&wFd] (bytespan data) {
+            brg::descramble("MyKey", fileData, [&wFd] (bytespan data) {
                 brg::unzip(data, [&wFd] (bytespan data) {
                     wFd << data;
                 });

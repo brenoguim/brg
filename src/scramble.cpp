@@ -1,9 +1,9 @@
-#include "crypt.h"
+#include "scramble.h"
 
 #include <cstring>
 #include <memory>
 
-void brg::encrypt(const char* keyP, brg::span<const brg::byte> data, const std::function<void(brg::span<const brg::byte>)>& writeOut)
+void brg::scramble(const char* keyP, brg::span<const brg::byte> data, const std::function<void(brg::span<const brg::byte>)>& writeOut)
 {
     auto key = std::unique_ptr<char[]>(::strdup(keyP));
     auto keylen = ::strlen(keyP);
@@ -18,7 +18,7 @@ void brg::encrypt(const char* keyP, brg::span<const brg::byte> data, const std::
     writeOut(brg::span<const brg::byte>(out.get(), data.size()));
 }
 
-void brg::decrypt(const char* keyP, brg::span<const brg::byte> data, const std::function<void(brg::span<const brg::byte>)>& writeOut)
+void brg::descramble(const char* keyP, brg::span<const brg::byte> data, const std::function<void(brg::span<const brg::byte>)>& writeOut)
 {
     auto key = std::unique_ptr<char[]>(::strdup(keyP));
     auto keylen = ::strlen(keyP);

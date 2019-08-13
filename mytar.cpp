@@ -1,7 +1,7 @@
 #include "src/MMFile.h"
 #include "src/tar_writer.h"
 #include "src/zip.h"
-#include "src/crypt.h"
+#include "src/scramble.h"
 
 #include <cstdlib>
 #include <iostream>
@@ -10,8 +10,8 @@
 int main(int argc, char** argv)
 {
     bool gz = false;
-    bool crypt = false;
-    const char* cryptKey = nullptr;
+    bool scramble = false;
+    const char* scrambleKey = nullptr;
     std::string outputFile;
 
     for (int i = 1; i < argc; ++i)
@@ -23,8 +23,8 @@ int main(int argc, char** argv)
         }
         else if (arg == "-k")
         {
-            crypt = true;
-            cryptKey = argv[++i];
+            scramble = true;
+            scrambleKey = argv[++i];
         }
         else if (arg == "-o")
         {
@@ -49,11 +49,11 @@ int main(int argc, char** argv)
         twriter.write(data);
     };
 
-    if (crypt)
+    if (scramble)
     {
-        addDataToTar = [cryptKey, innerFn = addDataToTar] (bytespan data)
+        addDataToTar = [scrambleKey, innerFn = addDataToTar] (bytespan data)
         {
-            brg::encrypt(cryptKey, data, innerFn);
+            brg::scramble(scrambleKey, data, innerFn);
         };
     }
 

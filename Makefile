@@ -35,7 +35,7 @@ libdecompresser.so: decompresser.cpp src/libbrg.a
 mytar: mytar.cpp src/libbrg.a
 	g++ -O2 -std=c++14 -o $@ $^ -lz
 
-src/libbrg.a: src/MMFile.o src/zip.o src/crypt.o src/fd.o
+src/libbrg.a: src/MMFile.o src/zip.o src/scramble.o src/fd.o
 	rm -f $@
 	ar rcs $@ $^
 
