@@ -14,10 +14,10 @@ demo1: mycat libdecompresser.so mytar
 	echo demo/a demo/b demo/c | ./mytar -k MyKey -z -o out.mytar
 	du -sh out.mytar
 	rm -rf demo
-	@echo "############################## Rodando mycat com um arquivo que nao existe ##########################################################"
+	@echo "############################## Running mycat with a nonexistent file ##########################################################"
 	./mycat demo/a
 	@echo ""
-	@echo "############################## Rodando mycat com um arquivo montado virtualmente atraves do LD_PRELOAD ################"
+	@echo "############################## Running mycat with a file virtually mounted through LD_PRELOAD ################"
 	VIRTUAL_TAR_FS=out.mytar LD_PRELOAD=./libdecompresser.so ./mycat demo/a > /tmp/oa
 	VIRTUAL_TAR_FS=out.mytar LD_PRELOAD=./libdecompresser.so ./mycat demo/b > /tmp/ob
 	VIRTUAL_TAR_FS=out.mytar LD_PRELOAD=./libdecompresser.so ./mycat demo/c > /tmp/oc
