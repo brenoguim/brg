@@ -10,6 +10,7 @@ template<class Prefix, class ArrayElement>
 class PrefixedArray
 {
     PrefixedArray() = default;
+    ~PrefixedArray() = default;
 
     template<class... Args>
     PrefixedArray(Args... args) : m_prefix(std::forward<Args>(args)...) {}
