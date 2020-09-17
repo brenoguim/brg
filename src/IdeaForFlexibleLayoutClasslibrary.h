@@ -79,18 +79,6 @@ template<class T> struct PreImplConverter<T[]> { using type = ArrayPlaceHolder<T
 
 namespace detail
 {
-    template<int... Is>
-    struct seq { };
-
-    template<int N, int... Is>
-    struct gen_seq : gen_seq<N - 1, N - 1, Is...> { };
-
-    template<int... Is>
-    struct gen_seq<0, Is...> : seq<Is...> { };
-}
-
-namespace detail
-{
     template<typename T, typename F, int... Is>
     void for_each(T&& t, F f, std::integer_sequence<int, Is...>)
     {
