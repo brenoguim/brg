@@ -23,13 +23,13 @@ template<class T> struct SizedArray
     T* const m_begin; T* const m_end;
 };
 
-template<class T> struct UnboundedArrayToPointer { using type = T; };
+template<class T> struct TransformUnboundedArrays { using type = T; };
 
 template<class T> requires std::is_trivially_destructible<T>::value
-struct UnboundedArrayToPointer<T[]> { using type = UnsizedArray<T>; };
+struct TransformUnboundedArrays<T[]> { using type = UnsizedArray<T>; };
 
 template<class T> requires (!std::is_trivially_destructible<T>::value)
-struct UnboundedArrayToPointer<T[]> { using type = SizedArray<T>; };
+struct TransformUnboundedArrays<T[]> { using type = SizedArray<T>; };
 
 template<class T>
 struct ArrayPlaceHolder
@@ -76,6 +76,9 @@ template<class T> struct is_sized_array<SizedArray<T>> : std::true_type {};
 
 template<class T> struct PreImplConverter { using type = T; };
 template<class T> struct PreImplConverter<T[]> { using type = ArrayPlaceHolder<T>; };
+template<class T> struct PreImplConverter<UnsizedArray<T>> { using type = ArrayPlaceHolder<T>; };
+template<class T> struct PreImplConverter<SizedArray<T>> { using type = ArrayPlaceHolder<T>; };
+
 
 namespace detail
 {
@@ -98,50 +101,38 @@ void for_each_in_tuple(const std::tuple<Ts...>& t, F f)
     detail::for_each(t, f, std::make_integer_sequence<int, sizeof...(Ts)>());
 }
 
-template<class MemberEnum, class... T>
-struct FlexibleLayoutClass
+template<class Derived, class... T>
+class FlexibleLayoutClass : public std::tuple<typename TransformUnboundedArrays<T>::type...>
 { 
-    using PreImpl = std::tuple<typename PreImplConverter<T>::type...>;
+  private:
+    using Base = std::tuple<typename TransformUnboundedArrays<T>::type...>;
+    using Base::Base;
 
-    class Impl : public std::tuple<typename UnboundedArrayToPointer<T>::type...>
-    {
-      public:
-        template<MemberEnum e> auto& get() { return std::get<e>(*this); }
-        template<MemberEnum e> auto& get() const { return std::get<e>(*this); }
+  protected:
+    using FLC = FlexibleLayoutClass;
+    ~FlexibleLayoutClass() = default;
 
-        static void deleet(const Impl* p)
-        {
-            if (!p) return;
-            for_each_in_tuple(*p,
-                []<class U>(U& u) {
-                    if constexpr (is_sized_array<U>::value)
-                        std::destroy(u.begin(), u.end());
-                });
-            p->~Impl();
-            ::operator delete(const_cast<Impl*>(p));
-        }
-      private:
-        friend class FlexibleLayoutClass;
-        using Base = std::tuple<typename UnboundedArrayToPointer<T>::type...>;
-        using Base::Base;
-        ~Impl() = default;
-    };
-
+  public:
+    template<auto e> auto& get() { return std::get<e>(*this); }
+    template<auto e> auto& get() const { return std::get<e>(*this); }
 
     template<class... Args>
     static auto niw(Args&&... args)
     {
+        static_assert(sizeof(Derived) == sizeof(FlexibleLayoutClass));
+
+        using PreImpl = std::tuple<typename PreImplConverter<T>::type...>;
         PreImpl pi(std::forward<Args>(args)...);
 
         std::size_t numBytesForArrays = 0;
         for_each_in_tuple(pi,
             [&numBytesForArrays]<class U>(U& u) mutable {
                 if constexpr (is_array_placeholder<U>::value)
-                    numBytesForArrays += u.numRequiredBytes(sizeof(Impl) + numBytesForArrays);
+                    numBytesForArrays += u.numRequiredBytes(sizeof(FlexibleLayoutClass) + numBytesForArrays);
             });
 
-        auto implBuffer = ::operator new(sizeof(Impl) + numBytesForArrays);
-        void* arrayBuffer = static_cast<char*>(implBuffer) + sizeof(Impl);
+        auto implBuffer = ::operator new(sizeof(FlexibleLayoutClass) + numBytesForArrays);
+        void* arrayBuffer = static_cast<char*>(implBuffer) + sizeof(FlexibleLayoutClass);
 
         for_each_in_tuple(pi,
             [arrayBuffer, &numBytesForArrays]<class U>(U& u) mutable {
@@ -151,31 +142,58 @@ struct FlexibleLayoutClass
 
         assert(numBytesForArrays == 0);
 
-        return new (implBuffer) Impl(std::move(pi));
+        return new (implBuffer) Derived(std::move(pi));
+    }
+
+    static void deleet(const Derived* p)
+    {
+        if (!p) return;
+        for_each_in_tuple(*p,
+            []<class U>(U& u) {
+                if constexpr (!std::is_trivially_destructible<U>::value)
+                    std::destroy(u.begin(), u.end());
+            });
+        p->~Derived();
+        ::operator delete(const_cast<Derived*>(p));
     }
 };
 
 template<class T> void deleet(const T* p) { T::deleet(p); }
 
-
-
 #include <cstring>
 
-
-auto foo()
+struct Treta : public FlexibleLayoutClass<Treta, int, std::string, SizedArray<char>, std::string>
 {
     enum Members {RefCount, Header, Data, Checksum};
-    using Message = FlexibleLayoutClass<Members, int, std::string, char[], std::string>;
 
-    auto r = Message::niw(1, "header", /*msg size=*/ 1000, "f114ffabd31");
+    static auto* niw(std::string header) { return FLC::niw(1, std::move(header), 1000, "breno"); }
+};
+
+auto foo3()
+{
+    auto r = Treta::niw("header0000000000");
     
-    std::strcpy(r->get<Data>(), "This is my message!");
+    std::strcpy(r->get<Treta::Data>().begin(), "This is my message!");
 
-    std::cout << "Refcount: " << r->get<RefCount>()
-              << "\nHeader: " << r->get<Header>()
-              << "\nChecksum: " << r->get<Checksum>()
-              << "\nData: " << r->get<Data>()
+    std::cout << "Refcount: " << r->get<Treta::RefCount>()
+              << "\nHeader: " << r->get<Treta::Header>()
+              << "\nChecksum: " << r->get<Treta::Checksum>()
+              << "\nData: " << r->get<Treta::Data>().begin()
+              << "\nData size: " << r->get<Treta::Data>().size()
               << std::endl;
 
     deleet(r);
 }
+
+void log(int l) { printf("freeing! %d\n", l); }
+
+void operator delete  ( void* ptr ) noexcept { log(__LINE__); }
+void operator delete[]( void* ptr ) noexcept { log(__LINE__); }
+void operator delete  ( void* ptr, std::align_val_t al ) noexcept { log(__LINE__); }
+void operator delete[]( void* ptr, std::align_val_t al ) noexcept { log(__LINE__); }
+void operator delete  ( void* ptr, std::size_t sz ) noexcept { log(__LINE__); }
+void operator delete[]( void* ptr, std::size_t sz ) noexcept { log(__LINE__); }
+void operator delete  ( void* ptr, std::size_t sz, std::align_val_t al ) noexcept { log(__LINE__); }
+void operator delete[]( void* ptr, std::size_t sz, std::align_val_t al ) noexcept { log(__LINE__); }
+
+int main() { foo3(); }
